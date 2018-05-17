@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/lambert/Documents/Python_code/tensorflow_code/Titanic/Titanic_model/Titanic_model.ckpt"
+all_model_checkpoint_paths: "/Users/lambert/Documents/Python_code/tensorflow_code/Titanic/Titanic_model/Titanic_model.ckpt"
