@@ -1295,7 +1295,7 @@ node {
         dtype: DT_INT32
         tensor_shape {
         }
-        int_val: 10
+        int_val: 128
       }
     }
   }
@@ -9608,7 +9608,7 @@ node {
   }
 }
 node {
-  name: "dnn/head/logits/Shape"
+  name: "dnn/head/predictions/logits/Shape"
   op: "Shape"
   input: "dnn/logits/BiasAdd"
   attr {
@@ -9637,7 +9637,7 @@ node {
   }
 }
 node {
-  name: "dnn/head/logits/assert_rank_at_least/rank"
+  name: "dnn/head/predictions/logits/assert_rank_at_least/rank"
   op: "Const"
   attr {
     key: "_output_shapes"
@@ -9667,12 +9667,345 @@ node {
   }
 }
 node {
-  name: "dnn/head/logits/assert_rank_at_least/assert_type/statically_determined_correct_type"
+  name: "dnn/head/predictions/logits/assert_rank_at_least/assert_type/statically_determined_correct_type"
   op: "NoOp"
 }
 node {
-  name: "dnn/head/logits/assert_rank_at_least/static_checks_determined_all_ok"
+  name: "dnn/head/predictions/logits/assert_rank_at_least/static_checks_determined_all_ok"
   op: "NoOp"
+}
+node {
+  name: "dnn/head/predictions/logistic"
+  op: "Sigmoid"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/zeros_like"
+  op: "ZerosLike"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/two_class_logits/axis"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: -1
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/two_class_logits"
+  op: "ConcatV2"
+  input: "dnn/head/predictions/zeros_like"
+  input: "dnn/logits/BiasAdd"
+  input: "dnn/head/predictions/two_class_logits/axis"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 2
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/probabilities"
+  op: "Softmax"
+  input: "dnn/head/predictions/two_class_logits"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 2
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/class_ids/dimension"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: -1
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/class_ids"
+  op: "ArgMax"
+  input: "dnn/head/predictions/two_class_logits"
+  input: "dnn/head/predictions/class_ids/dimension"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "output_type"
+    value {
+      type: DT_INT64
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/ExpandDims/dim"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: -1
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/ExpandDims"
+  op: "ExpandDims"
+  input: "dnn/head/predictions/class_ids"
+  input: "dnn/head/predictions/ExpandDims/dim"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "Tdim"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/predictions/str_classes"
+  op: "AsString"
+  input: "dnn/head/predictions/ExpandDims"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "fill"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "precision"
+    value {
+      i: -1
+    }
+  }
+  attr {
+    key: "scientific"
+    value {
+      b: false
+    }
+  }
+  attr {
+    key: "shortest"
+    value {
+      b: false
+    }
+  }
+  attr {
+    key: "width"
+    value {
+      i: -1
+    }
+  }
 }
 node {
   name: "dnn/head/labels/ExpandDims/dim"
@@ -10439,9 +10772,713 @@ node {
   }
 }
 node {
-  name: "dnn/head/mean_squared_error/SquaredDifference"
-  op: "SquaredDifference"
-  input: "dnn/logits/BiasAdd"
+  name: "dnn/head/assert_range/Const"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 2.0
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Less"
+  op: "Less"
+  input: "dnn/head/ToFloat"
+  input: "dnn/head/assert_range/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Const"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: 2
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 2
+          }
+        }
+        tensor_content: "\000\000\000\000\001\000\000\000"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/All"
+  op: "All"
+  input: "dnn/head/assert_range/assert_less/Less"
+  input: "dnn/head/assert_range/assert_less/Const"
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/Const"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Label IDs must < n_classes"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/Const_1"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Condition x < y did not hold element-wise:"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/Const_2"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "x (dnn/head/ToFloat:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/Const_3"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "y (dnn/head/assert_range/Const:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Switch"
+  op: "Switch"
+  input: "dnn/head/assert_range/assert_less/All"
+  input: "dnn/head/assert_range/assert_less/All"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_t"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Switch:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Switch"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/pred_id"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_less/All"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/NoOp"
+  op: "NoOp"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_t"
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/control_dependency"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_t"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/NoOp"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_t"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_0"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Label IDs must < n_classes"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_1"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Condition x < y did not hold element-wise:"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_2"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "x (dnn/head/ToFloat:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_4"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "y (dnn/head/assert_range/Const:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert"
+  op: "Assert"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_0"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_1"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_2"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch_1"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/data_4"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch_2"
+  attr {
+    key: "T"
+    value {
+      list {
+        type: DT_STRING
+        type: DT_STRING
+        type: DT_STRING
+        type: DT_FLOAT
+        type: DT_STRING
+        type: DT_FLOAT
+      }
+    }
+  }
+  attr {
+    key: "summarize"
+    value {
+      i: 3
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch"
+  op: "Switch"
+  input: "dnn/head/assert_range/assert_less/All"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_less/All"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch_1"
+  op: "Switch"
+  input: "dnn/head/ToFloat"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/ToFloat"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert/Switch_2"
+  op: "Switch"
+  input: "dnn/head/assert_range/Const"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/Const"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/control_dependency_1"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/Assert"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_less/Assert/AssertGuard/switch_f"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_less/Assert/AssertGuard/Merge"
+  op: "Merge"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/control_dependency_1"
+  input: "dnn/head/assert_range/assert_less/Assert/AssertGuard/control_dependency"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/Const"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/LessEqual"
+  op: "LessEqual"
+  input: "dnn/head/assert_range/assert_non_negative/Const"
   input: "dnn/head/ToFloat"
   attr {
     key: "T"
@@ -10466,108 +11503,8 @@ node {
   }
 }
 node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/weights"
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Const"
   op: "Const"
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-        }
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-        }
-        float_val: 1.0
-      }
-    }
-  }
-}
-node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/weights/shape"
-  op: "Const"
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/weights/rank"
-  op: "Const"
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-        }
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-        }
-        int_val: 0
-      }
-    }
-  }
-}
-node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/values/shape"
-  op: "Shape"
-  input: "dnn/head/mean_squared_error/SquaredDifference"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
   attr {
     key: "_output_shapes"
     value {
@@ -10581,25 +11518,6 @@ node {
     }
   }
   attr {
-    key: "out_type"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/values/rank"
-  op: "Const"
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-        }
-      }
-    }
-  }
-  attr {
     key: "dtype"
     value {
       type: DT_INT32
@@ -10611,20 +11529,45 @@ node {
       tensor {
         dtype: DT_INT32
         tensor_shape {
+          dim {
+            size: 2
+          }
         }
-        int_val: 2
+        tensor_content: "\000\000\000\000\001\000\000\000"
       }
     }
   }
 }
 node {
-  name: "dnn/head/mean_squared_error/assert_broadcastable/static_scalar_check_success"
-  op: "NoOp"
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+  op: "All"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/LessEqual"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Const"
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
 }
 node {
-  name: "dnn/head/mean_squared_error/ToFloat_3/x"
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/Const"
   op: "Const"
-  input: "^dnn/head/mean_squared_error/assert_broadcastable/static_scalar_check_success"
   attr {
     key: "_output_shapes"
     value {
@@ -10637,26 +11580,723 @@ node {
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      type: DT_STRING
     }
   }
   attr {
     key: "value"
     value {
       tensor {
-        dtype: DT_FLOAT
+        dtype: DT_STRING
         tensor_shape {
         }
-        float_val: 1.0
+        string_val: "Label IDs must >= 0"
       }
     }
   }
 }
 node {
-  name: "dnn/head/mean_squared_error/Mul"
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/Const_1"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Condition x >= 0 did not hold element-wise:"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/Const_2"
+  op: "Const"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "x (dnn/head/ToFloat:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Switch"
+  op: "Switch"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_t"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Switch:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Switch"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/pred_id"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/NoOp"
+  op: "NoOp"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_t"
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/control_dependency"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_t"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/NoOp"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_t"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_0"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Label IDs must >= 0"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_1"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "Condition x >= 0 did not hold element-wise:"
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_2"
+  op: "Const"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "x (dnn/head/ToFloat:0) = "
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert"
+  op: "Assert"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/Switch"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_0"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_1"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/data_2"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/Switch_1"
+  attr {
+    key: "T"
+    value {
+      list {
+        type: DT_STRING
+        type: DT_STRING
+        type: DT_STRING
+        type: DT_FLOAT
+      }
+    }
+  }
+  attr {
+    key: "summarize"
+    value {
+      i: 3
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/Switch"
+  op: "Switch"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_non_negative/assert_less_equal/All"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert/Switch_1"
+  op: "Switch"
+  input: "dnn/head/ToFloat"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/ToFloat"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/control_dependency_1"
+  op: "Identity"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Assert"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/switch_f"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Merge"
+  op: "Merge"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/control_dependency_1"
+  input: "dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/control_dependency"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+        }
+        shape {
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/assert_range/Identity"
+  op: "Identity"
+  input: "dnn/head/ToFloat"
+  input: "^dnn/head/assert_range/assert_less/Assert/AssertGuard/Merge"
+  input: "^dnn/head/assert_range/assert_non_negative/assert_less_equal/Assert/AssertGuard/Merge"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/zeros_like"
+  op: "ZerosLike"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/GreaterEqual"
+  op: "GreaterEqual"
+  input: "dnn/logits/BiasAdd"
+  input: "dnn/head/logistic_loss/zeros_like"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/Select"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/logits/BiasAdd"
+  input: "dnn/head/logistic_loss/zeros_like"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/Neg"
+  op: "Neg"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/Select_1"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/head/logistic_loss/Neg"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/mul"
   op: "Mul"
-  input: "dnn/head/mean_squared_error/SquaredDifference"
-  input: "dnn/head/mean_squared_error/ToFloat_3/x"
+  input: "dnn/logits/BiasAdd"
+  input: "dnn/head/assert_range/Identity"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/sub"
+  op: "Sub"
+  input: "dnn/head/logistic_loss/Select"
+  input: "dnn/head/logistic_loss/mul"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/Exp"
+  op: "Exp"
+  input: "dnn/head/logistic_loss/Select_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss/Log1p"
+  op: "Log1p"
+  input: "dnn/head/logistic_loss/Exp"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/head/logistic_loss"
+  op: "Add"
+  input: "dnn/head/logistic_loss/sub"
+  input: "dnn/head/logistic_loss/Log1p"
   attr {
     key: "T"
     value {
@@ -10775,7 +12415,7 @@ node {
 node {
   name: "dnn/head/weighted_loss/assert_broadcastable/values/shape"
   op: "Shape"
-  input: "dnn/head/mean_squared_error/Mul"
+  input: "dnn/head/logistic_loss"
   attr {
     key: "T"
     value {
@@ -10869,7 +12509,7 @@ node {
 node {
   name: "dnn/head/weighted_loss/Mul"
   op: "Mul"
-  input: "dnn/head/mean_squared_error/Mul"
+  input: "dnn/head/logistic_loss"
   input: "dnn/head/weighted_loss/ToFloat_1/x"
   attr {
     key: "T"
@@ -10966,7 +12606,7 @@ node {
 node {
   name: "dnn/head/ones_like/Shape"
   op: "Shape"
-  input: "dnn/head/mean_squared_error/Mul"
+  input: "dnn/head/logistic_loss"
   attr {
     key: "T"
     value {
@@ -11528,7 +13168,7 @@ node {
 node {
   name: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/Shape"
   op: "Shape"
-  input: "dnn/head/mean_squared_error/Mul"
+  input: "dnn/head/logistic_loss"
   attr {
     key: "T"
     value {
@@ -11713,7 +13353,7 @@ node {
 node {
   name: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/Mul_1"
   op: "Mul"
-  input: "dnn/head/mean_squared_error/Mul"
+  input: "dnn/head/logistic_loss"
   input: "dnn/gradients/dnn/head/weighted_loss/Sum_grad/Tile"
   attr {
     key: "T"
@@ -11869,9 +13509,9 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Shape"
   op: "Shape"
-  input: "dnn/head/mean_squared_error/SquaredDifference"
+  input: "dnn/head/logistic_loss/sub"
   attr {
     key: "T"
     value {
@@ -11898,43 +13538,39 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape_1"
-  op: "Const"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Shape_1"
+  op: "Shape"
+  input: "dnn/head/logistic_loss/Log1p"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
   attr {
     key: "_output_shapes"
     value {
       list {
         shape {
           dim {
+            size: 2
           }
         }
       }
     }
   }
   attr {
-    key: "dtype"
+    key: "out_type"
     value {
       type: DT_INT32
     }
   }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/BroadcastGradientArgs"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/BroadcastGradientArgs"
   op: "BroadcastGradientArgs"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape_1"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Shape"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Shape_1"
   attr {
     key: "T"
     value {
@@ -11960,37 +13596,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Mul"
-  op: "Mul"
-  input: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/tuple/control_dependency"
-  input: "dnn/head/mean_squared_error/ToFloat_3/x"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          dim {
-            size: -1
-          }
-          dim {
-            size: 1
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Sum"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Sum"
   op: "Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Mul"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/BroadcastGradientArgs"
+  input: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/BroadcastGradientArgs"
   attr {
     key: "T"
     value {
@@ -12021,10 +13630,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Reshape"
   op: "Reshape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Shape"
   attr {
     key: "T"
     value {
@@ -12054,37 +13663,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Mul_1"
-  op: "Mul"
-  input: "dnn/head/mean_squared_error/SquaredDifference"
-  input: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/tuple/control_dependency"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          dim {
-            size: -1
-          }
-          dim {
-            size: 1
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Sum_1"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Sum_1"
   op: "Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Mul_1"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/BroadcastGradientArgs:1"
+  input: "dnn/gradients/dnn/head/weighted_loss/Mul_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/BroadcastGradientArgs:1"
   attr {
     key: "T"
     value {
@@ -12115,10 +13697,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape_1"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/Reshape_1"
   op: "Reshape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Sum_1"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Shape_1"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Sum_1"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Shape_1"
   attr {
     key: "T"
     value {
@@ -12136,22 +13718,28 @@ node {
     value {
       list {
         shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
         }
       }
     }
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/group_deps"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/group_deps"
   op: "NoOp"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss_grad/Reshape_1"
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/control_dependency"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency"
   op: "Identity"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/group_deps"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -12162,7 +13750,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape"
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss_grad/Reshape"
       }
     }
   }
@@ -12183,10 +13771,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/control_dependency_1"
+  name: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency_1"
   op: "Identity"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape_1"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/group_deps"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/Reshape_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -12197,7 +13785,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@dnn/gradients/dnn/head/mean_squared_error/Mul_grad/Reshape_1"
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss_grad/Reshape_1"
       }
     }
   }
@@ -12206,15 +13794,21 @@ node {
     value {
       list {
         shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
         }
       }
     }
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape"
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape"
   op: "Shape"
-  input: "dnn/logits/BiasAdd"
+  input: "dnn/head/logistic_loss/Select"
   attr {
     key: "T"
     value {
@@ -12241,9 +13835,9 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape_1"
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape_1"
   op: "Shape"
-  input: "dnn/head/ToFloat"
+  input: "dnn/head/logistic_loss/mul"
   attr {
     key: "T"
     value {
@@ -12270,10 +13864,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/BroadcastGradientArgs"
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/BroadcastGradientArgs"
   op: "BroadcastGradientArgs"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape_1"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape_1"
   attr {
     key: "T"
     value {
@@ -12299,9 +13893,240 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/scalar"
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Sum"
+  op: "Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/BroadcastGradientArgs"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          unknown_rank: true
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape"
+  op: "Reshape"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tshape"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Sum_1"
+  op: "Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/BroadcastGradientArgs:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          unknown_rank: true
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Neg"
+  op: "Neg"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Sum_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          unknown_rank: true
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape_1"
+  op: "Reshape"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Neg"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Shape_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tshape"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/group_deps"
+  op: "NoOp"
+  input: "^dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape_1"
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency_1"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/sub_grad/Reshape_1"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/add/x"
   op: "Const"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/control_dependency"
+  input: "^dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency_1"
   attr {
     key: "_output_shapes"
     value {
@@ -12324,16 +14149,16 @@ node {
         dtype: DT_FLOAT
         tensor_shape {
         }
-        float_val: 2.0
+        float_val: 1.0
       }
     }
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/mul"
-  op: "Mul"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/scalar"
-  input: "dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/control_dependency"
+  name: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/add"
+  op: "Add"
+  input: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/add/x"
+  input: "dnn/head/logistic_loss/Exp"
   attr {
     key: "T"
     value {
@@ -12357,11 +14182,62 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/sub"
-  op: "Sub"
+  name: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/Reciprocal"
+  op: "Reciprocal"
+  input: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/add"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/mul"
+  op: "Mul"
+  input: "dnn/gradients/dnn/head/logistic_loss_grad/tuple/control_dependency_1"
+  input: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/Reciprocal"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/zeros_like"
+  op: "ZerosLike"
   input: "dnn/logits/BiasAdd"
-  input: "dnn/head/ToFloat"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/Mul_grad/tuple/control_dependency"
   attr {
     key: "T"
     value {
@@ -12385,10 +14261,11 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/mul_1"
-  op: "Mul"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/mul"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/sub"
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_grad/zeros_like"
   attr {
     key: "T"
     value {
@@ -12412,143 +14289,11 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Sum"
-  op: "Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/mul_1"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/BroadcastGradientArgs"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          unknown_rank: true
-        }
-      }
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape"
-  op: "Reshape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tshape"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          dim {
-            size: -1
-          }
-          dim {
-            size: 1
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Sum_1"
-  op: "Sum"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/mul_1"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/BroadcastGradientArgs:1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          unknown_rank: true
-        }
-      }
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape_1"
-  op: "Reshape"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Sum_1"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Shape_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tshape"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_output_shapes"
-    value {
-      list {
-        shape {
-          dim {
-            size: -1
-          }
-          dim {
-            size: 1
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Neg"
-  op: "Neg"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape_1"
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/Select_1"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_grad/zeros_like"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency"
   attr {
     key: "T"
     value {
@@ -12572,16 +14317,16 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/group_deps"
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/group_deps"
   op: "NoOp"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Neg"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_grad/Select_1"
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/control_dependency"
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/control_dependency"
   op: "Identity"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/group_deps"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -12592,7 +14337,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape"
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
       }
     }
   }
@@ -12613,10 +14358,10 @@ node {
   }
 }
 node {
-  name: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/control_dependency_1"
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/control_dependency_1"
   op: "Identity"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Neg"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/group_deps"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_grad/Select_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -12627,7 +14372,612 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Neg"
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_grad/Select_1"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape"
+  op: "Shape"
+  input: "dnn/logits/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: 2
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "out_type"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape_1"
+  op: "Shape"
+  input: "dnn/head/assert_range/Identity"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: 2
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "out_type"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/BroadcastGradientArgs"
+  op: "BroadcastGradientArgs"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+        }
+        shape {
+          dim {
+            size: -1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Mul"
+  op: "Mul"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency_1"
+  input: "dnn/head/assert_range/Identity"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Sum"
+  op: "Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Mul"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/BroadcastGradientArgs"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          unknown_rank: true
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape"
+  op: "Reshape"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tshape"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Mul_1"
+  op: "Mul"
+  input: "dnn/logits/BiasAdd"
+  input: "dnn/gradients/dnn/head/logistic_loss/sub_grad/tuple/control_dependency_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Sum_1"
+  op: "Sum"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Mul_1"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/BroadcastGradientArgs:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          unknown_rank: true
+        }
+      }
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape_1"
+  op: "Reshape"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Sum_1"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Shape_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "Tshape"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/group_deps"
+  op: "NoOp"
+  input: "^dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape_1"
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/control_dependency"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape"
+  input: "^dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/control_dependency_1"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/mul_grad/Reshape_1"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Exp_grad/mul"
+  op: "Mul"
+  input: "dnn/gradients/dnn/head/logistic_loss/Log1p_grad/mul"
+  input: "dnn/head/logistic_loss/Exp"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/zeros_like"
+  op: "ZerosLike"
+  input: "dnn/head/logistic_loss/Neg"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/gradients/dnn/head/logistic_loss/Exp_grad/mul"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/zeros_like"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select_1"
+  op: "Select"
+  input: "dnn/head/logistic_loss/GreaterEqual"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/zeros_like"
+  input: "dnn/gradients/dnn/head/logistic_loss/Exp_grad/mul"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/group_deps"
+  op: "NoOp"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select_1"
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/control_dependency"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/control_dependency_1"
+  op: "Identity"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select_1"
+  input: "^dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/group_deps"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_1_grad/Select_1"
+      }
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/dnn/head/logistic_loss/Neg_grad/Neg"
+  op: "Neg"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/control_dependency"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_output_shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: -1
+          }
+          dim {
+            size: 1
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dnn/gradients/AddN"
+  op: "AddN"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss/mul_grad/tuple/control_dependency"
+  input: "dnn/gradients/dnn/head/logistic_loss/Select_1_grad/tuple/control_dependency_1"
+  input: "dnn/gradients/dnn/head/logistic_loss/Neg_grad/Neg"
+  attr {
+    key: "N"
+    value {
+      i: 4
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
       }
     }
   }
@@ -12650,7 +15000,7 @@ node {
 node {
   name: "dnn/gradients/dnn/logits/BiasAdd_grad/BiasAddGrad"
   op: "BiasAddGrad"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/control_dependency"
+  input: "dnn/gradients/AddN"
   attr {
     key: "T"
     value {
@@ -12679,13 +15029,13 @@ node {
 node {
   name: "dnn/gradients/dnn/logits/BiasAdd_grad/tuple/group_deps"
   op: "NoOp"
-  input: "^dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/control_dependency"
+  input: "^dnn/gradients/AddN"
   input: "^dnn/gradients/dnn/logits/BiasAdd_grad/BiasAddGrad"
 }
 node {
   name: "dnn/gradients/dnn/logits/BiasAdd_grad/tuple/control_dependency"
   op: "Identity"
-  input: "dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/tuple/control_dependency"
+  input: "dnn/gradients/AddN"
   input: "^dnn/gradients/dnn/logits/BiasAdd_grad/tuple/group_deps"
   attr {
     key: "T"
@@ -12697,7 +15047,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@dnn/gradients/dnn/head/mean_squared_error/SquaredDifference_grad/Reshape"
+        s: "loc:@dnn/gradients/dnn/head/logistic_loss/Select_grad/Select"
       }
     }
   }
@@ -19080,7 +21430,7 @@ node {
         dtype: DT_STRING
         tensor_shape {
         }
-        string_val: "_temp_92b2182985bb4cf4877bd83f9a673879/part"
+        string_val: "_temp_bb9e5a7e6c2743c0a3a5f028e18818e6/part"
       }
     }
   }

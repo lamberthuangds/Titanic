@@ -2,4 +2,4 @@
 #*.ckpt.*
 #checkpoint
 *.pdf
-
+./Titanic_model

@@ -1,2 +1,0 @@
-model_checkpoint_path: "/home/lambert/Git/Titanic/Titanic_model/Titanic_model.ckpt"
-all_model_checkpoint_paths: "/home/lambert/Git/Titanic/Titanic_model/Titanic_model.ckpt"
